@@ -10,9 +10,11 @@
 Text based user interface
 """
 
-import sys
+import sys, time
 import ethercut.ui.base as base
+import ethercut.platform as platform
 
+from ethercut.context import ctx
 from ethercut.types.colorstr import CStr
 
 
@@ -38,12 +40,90 @@ class TextUI(base.UI):
     Text based user interface
     """
 
-    def __init__(self, verb=True):
-        super(TextUI, self).__init__(verb)
+    def __init__(self, master):
+        super(TextUI, self).__init__()
+        self.instant_msg(CStr(self.banner).grey)
+        self.master = master
+        ctx.ui = self
+        self.verb = True
 
     def start(self):
+        self.user_msg("Welcome to ethercut, have fun and don't be evil!\n")
+
+        ########  Ethercut configuration phase  ########
+
+        self.msg("[ %s ]"%CStr("Modules loaded").green)
+
+        loaded = ", ".join(CStr(x.name).yellow for x in self.master.spoofers)
+        self.msg("Loaded %s spoofer%s [%s]" %(len(self.master.spoofers),
+                                                    "" if len(self.master.spoofers) == 1 else "s",
+                                                    loaded))
+        loaded = ", ".join(CStr(x.name).yellow for x in self.master.decoders)
+        self.msg("Loaded %s decoder%s [%s]" %(len(self.master.decoders),
+                                                    "" if len(self.master.decoders) == 1 else "s",
+                                                    loaded))
+        self.msg("")
+        self.flush()
+
+        self.msg("[ %s ]"%CStr("Network parameters").green)
+        if not self.master.opt.sniff.read:
+            self.master.update_network()
+            self.master.injector.configure()
+        else:
+            self.msg("No network parameters needed while reading form a file")
+
+        self.msg("")
+        self.flush()
+
+        self.msg("[ %s ]"%CStr("TARGETs compiled").green)
+        self.master.update_targets()
+        self.msg("")
+        self.flush()
+
+        self.msg("[ %s ]"%CStr("Sniffer").green)
+        self.master.sniffer.configure()
+        self.msg("")
+        self.flush()
+
+        self.msg("[ %s ]" %CStr("Koala filter").green)
+        self.master.filter.configure()
+        self.msg("")
+        self.flush()
+
+        self.msg("[ %s ]" %CStr("Target discovery manager").green)
+        self.master.discovery.configure()
+        self.msg("")
+        self.flush()
+
+        ######## End of configuration phase ########
+
+        ######## Ethercut startup!! ########
+
+        print "Starting ethercut in 2...",
+        sys.stdout.flush()
+        time.sleep(1)
+        print "1...",
+        sys.stdout.flush()
+        time.sleep(1)
+        print "NOW!"
         self.clear()
         self.instant_msg(CStr(self.banner).grey)
+        self.master.injector.start()
+        self.master.discovery.start()
+        self.master.sniffer.start()
+        self.master.filter.start()
+        self.master.spoofers.start_all()
+
+    def clean_exit(self):
+        self.instant_msg("Shutting down, please wait...") # Flush all messages
+        self.master.discovery.stop()
+        self.master.spoofers.stop_all()
+        self.master.injector.stop()
+        self.master.sniffer.end()
+        self.master.filter.stop()
+        self.user_msg("Filter stats:")
+        self.user_msg("%s" %self.master.filter.stats)
+        self.flush()
 
     def user_msg(self, msg):
         s = "%s%s\n" %(ERASE, msg)
