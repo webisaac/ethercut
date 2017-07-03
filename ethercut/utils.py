@@ -14,6 +14,7 @@ import socket
 import re, struct
 import ethercut.shell as shell
 import ethercut.platform as platform
+import ethercut.exceptions as exceptions
 
 
 ##########################
@@ -130,7 +131,7 @@ def expand_mac(mac):
                     raise ValueError()
                 ret.append(m)
             except ValueError:
-                raise exception.EthercutException("Invalid mac address %s" %m)
+                raise exceptions.EthercutException("Invalid mac address \"%s\"" %m)
 
         # Remove repeated macs
         ret = list(set(ret))
@@ -184,7 +185,7 @@ def expand_ip(ip):
                     ret.append(i)
 
             except ValueError:
-                raise exception.EthercutException("Invalid ip/range %s" %i)
+                raise exceptions.EthercutException("Invalid ip/range \"%s\"" %i)
 
             # Remove repeated ips
             ret = list(set(ret))
@@ -196,7 +197,7 @@ def expand_port(port):
     Returns a list of ports by expanding the parameter port
     """
     if not port: # "" means all ports
-        ret = None # We will use None as "None specific ports" (all ports)
+        ret = None
     else:
         ret = []
         ports = port.split(",") # Split individual ports
@@ -209,16 +210,16 @@ def expand_port(port):
 
                     for i in xrange(first, last+1):
                         if i < 0 or i > 65535: # Port out of range
-                            raise exception.EthercutException("Port out of range (0-65535) %s" %p)
+                            raise exceptions.EthercutException("Port out of range (0-65535) \"%s\"" %p)
                         ret.append(i)
                 else:
                     intp = int(p)
                     if intp < 0 or intp > 65535: # Port out of range
-                        raise exception.EthercutException("Port out of range (0-65535) %s" %p)
+                        raise exceptions.EthercutException("Port out of range (0-65535) \"%s\"" %p)
                     ret.append(intp)
 
             except ValueError:
-                raise exception.EthercutException("Invalid port/range %s" %p)
+                raise exceptions.EthercutException("Invalid port/range \"%s\"" %p)
 
 
         # Remove repeated ports
