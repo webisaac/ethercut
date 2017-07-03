@@ -10,9 +10,9 @@
 Class responsible of loading and managing the decoders
 """
 
-import ethercut.context as ctx
 
-from ethercut.config import conf
+from ethercut.config import ethconf
+from ethercut.context import ctx
 
 
 class SpooferManager(object):
@@ -25,13 +25,17 @@ class SpooferManager(object):
         Load all spoofers selected by the user and place them in the list
         """
         for s in ctx.opt.attack.spoofers:
-            self.spoofers.append(conf.spooferlist[s]())
+            if s == "*":
+                self.spoofers = map(lambda x: x(), ethconf.decoderlist.values())
+                break
+            else:
+                self.spoofers.append(ethconf.spooferlist[s]())
 
     def register(self):
         """
         This function will register all the spoofers specified in the configuration file
         """
-        for x in map(lambda x: "ethercut.mitm.%s" %x, conf.spoofermodules):
+        for x in map(lambda x: "ethercut.mitm.%s" %x, ethconf.spoofermodules):
             __import__(x, globals(), locals(), [], 0)
 
     def start_all(self):

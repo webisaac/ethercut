@@ -19,13 +19,14 @@ class UI(object):
     Base class for a user interface.
     """
 
-    def __init__(self, verb=True):
-        self.verb  = verb
+    def __init__(self):
+        self.verb  = False
         self.queue = Queue.Queue()
         # Progress bar
         self.pbar = None
-        # Banner
-        self.banner = self.get_banner()
+        # Banner and copyright
+        self.copyright = "\n%s copyright © %s %s\n" % (PROGRAM, COPYRIGHT, AUTHOR)
+        self.banner = self.get_banner() + self.copyright
 
     def user_msg(self, msg,  *args):
         """
@@ -106,9 +107,8 @@ class UI(object):
         Returns the banner as a string
         """
         s = ""
-        with open("/media/ivan/8GB/gitproyects/ethercut1/ethercut/banner", "r") as f:
+        with open("/media/ivan/8GB/gitproyects/ethercut/share/banner", "r") as f:
             for l in f:
                 s+="%s"%l
         s = s.replace("%VERSION%", "v"+VERSION+" "+STATE)
-        s+= "\n%s copyright © %s %s\n" % (PROGRAM, COPYRIGHT, AUTHOR)
         return s

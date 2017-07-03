@@ -42,70 +42,72 @@ name2color = { "RED"    : RED,
 # Set this variable to False to disable colored output
 COLORS_ON = True
 
+
 class CStr(str):
     """
     Colored string
     """
 
     def __new__(cls, string):
-        return str.__new__(cls, str(string)+RESET)
+        return str.__new__(cls, str(string))
+
     @property
     def red(self):
         if not COLORS_ON:
             return self
-        return FG%RED+self
+        return FG%RED+self+RESET
     @property
     def green(self):
         if not COLORS_ON:
             return self
-        return FG%GREEN+self
+        return FG%GREEN+self+RESET
     @property
     def yellow(self):
         if not COLORS_ON:
             return self
-        return FG%YELLOW+self
+        return FG%YELLOW+self+RESET
     @property
     def blue(self):
         if not COLORS_ON:
             return self
-        return FG%BLUE+self
+        return FG%BLUE+self+RESET
     @property
     def cyan(self):
         if not COLORS_ON:
             return self
-        return FG%CYAN+self
+        return FG%CYAN+self+RESET
     @property
     def magenta(self):
         if not COLORS_ON:
             return self
-        return FG%MAGENTA+self
+        return FG%MAGENTA+self+RESET
     @property
     def white(self):
         if not COLORS_ON:
             return self
-        return FG%WHITE+self
+        return FG%WHITE+self+RESET
     @property
     def grey(self):
         if not COLORS_ON:
             return self
-        return FG%GREY+self
+        return FG%GREY+self+RESET
     @property
     def black(self):
         if not COLORS_ON:
             return self
-        return FG%BLACK+self
+        return FG%BLACK+self+RESET
     def custom(self, r, g, b):
         if not COLORS_ON:
             return self
-        return FG%";".join([r,g,b])+self
+        return FG%";".join([r,g,b])+self+RESET
     def bg(self, color):
         if not COLORS_ON:
             return self
         try:
-            return FG%name2color[color.upper()]+self
+            return FG%name2color[color.upper()]+self+RESET
         except KeyError:
             raise ValueError("valid colors: RED, GREEN, YELLOW, BLUE, CYAN, MAGENTA, WHITE, GREY, BLACK")
     def custombg(self, r, g, b):
         if not COLORS_ON:
             return self
-        return BG%";".join([r,g,b])+self
+        return BG%";".join([r,g,b])+self+RESET

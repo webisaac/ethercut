@@ -12,7 +12,7 @@ Shell command execution
 
 import subprocess
 
-import ethercut.log       as log
+#import ethercut.log       as log
 import ethercut.platform  as platform
 import ethercut.exceptions as exceptions
 
@@ -44,7 +44,7 @@ class Shell:
         else:
             raise ValueError("cmd must be either a string or list of arguments")
 
-        log.log_ethcut.debug("Running command \"%s\"" %orig)
+        #log.log_ethcut.debug("Running command \"%s\"" %orig)
 
         # The shell Pipeline must be treated specially
         try:
@@ -63,8 +63,8 @@ class Shell:
                 p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 out = p.communicate()
 
-            if out[1]: # Show command errors in debug mode
-                log.log_ethcut.debug("Returned an error: %s" %out[1][:-1])
+            #if out[1]: # Show command errors in debug mode
+                #log.log_ethcut.debug("Returned an error: %s" %out[1][:-1])
             return out
         except OSError as e:
             raise exceptions.EthercutException("Error executing %s", orig)
