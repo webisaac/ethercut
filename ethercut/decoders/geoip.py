@@ -7,7 +7,7 @@
 # This project is released under a GPLv3 license
 
 """
-GeoDecoder: Looks up for globl IPs on a database and prints their location
+GeoDecoder: Looks up for global_ip IPs on a database and prints their location
 """
 
 import ethercut.exceptions as exceptions
@@ -16,61 +16,68 @@ try:
 except ImportError:
     raise exceptions.EthercutException("geoip2 not available, GeoIP parser won't be laoded")
 
-import ethercut.context as ctx
 import ethercut.decoders.base as base
+import ethercut.net.network as network
 
-from ethercut.config import conf
+from ethercut.context import ctx
+from ethercut.config import ethconf
 from ethercut.types.colorstr import CStr
-from scapy.layers.inet import IP
 
 
 class GeoDecoder(base.Decoder):
 
-    __slots__ = [ "reader", "known" ]
+    __slots__ = [ "reader", "known", "priv_net" ]
 
     name = "GEO"
 
+    # Private networks
+    priv_net = [ network.Network("10.0.0.0", "255.0.0.0"),
+                 network.Network("172.16.0.0", "255.240.0.0"),
+                 network.Network("192.168.0.0", "255.255.0.0"),
+                 network.Network("169.254.0.0", "255.255.0.0") ]
+
     def __init__(self):
-        super(GeoDecoder, self).__init__(filter=self.filter_func)
-        self.reader = geoip2.database.Reader(conf.geoipdb)
+        super(GeoDecoder, self).__init__()
+        self.reader = geoip2.database.Reader(ethconf.geoip_database)
         self.known = [] # List of known global IP addresses
 
-    @staticmethod
-    def filter_func(packet):
-        if packet.haslayer(IP):
-            return True
-        else:
-            return False
-
     def on_packet(self, packet):
-        globl = None
-        src = packet[IP].src
-        dst = packet[IP].dst
-        if src not in ctx.network:
-            globl = src
+        global_ip = None
+        src = packet.payload.src
+        dst = packet.payload.dst
+        for n in self.priv_net:
+            if src in n:
+                break
+        else:
+            global_ip = src
             addresses = "%s >> "+dst
-        elif dst not in ctx.network:
-            globl = dst
-            addresses = src+" >> %s"
+
+        if not global_ip:
+            for n in self.priv_net:
+                if dst in n:
+                    break
+            else:
+                global_ip = dst
+                addresses = src+" >> %s"
 
         # Only global IP addresses can have location
-        if not globl:
+        if not global_ip:
             return
 
-        if globl not in self.known:
-            self.known.append(globl)
+        if global_ip not in self.known:
+            self.known.append(global_ip)
             # Tries to read the location from the database
             try:
-                response = self.reader.city(globl)
+                response = self.reader.city(global_ip)
             except geoip2.errors.AddressNotFoundError:
                 message = "Address not in database"
-                globl = CStr(globl).red
+                global_ip = CStr(global_ip).red
             else:
-                globl = CStr(globl).green
+                global_ip = CStr(global_ip).green
                 message = "%s, %s. Lat: %s, Long: %s" %(response.subdivisions.most_specific.name,
                                                         response.country.name,
                                                         response.location.latitude,
                                                         response.location.longitude)
             ctx.ui.user_msg("[%s] %s [%s]"% (CStr(self.name).green,
-                                             addresses%globl,
+                                             addresses%global_ip,
                                              message))
