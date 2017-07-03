@@ -13,7 +13,6 @@ Base classes for program options
 
 import argparse
 
-
 class _CustomFormatter(argparse.HelpFormatter):
     """
     This subclass of argparse.HelpFormatter will display the output of the help text
@@ -42,20 +41,37 @@ class _CustomFormatter(argparse.HelpFormatter):
             return ", ".join(parts)
 
 _customformatter = lambda prog: _CustomFormatter(prog)
-_global_parser = argparse.ArgumentParser(usage="%(prog)s [options]", conflict_handler="resolve",
+global_parser = argparse.ArgumentParser(usage="%(prog)s [options]", conflict_handler="resolve",
                                  formatter_class=_customformatter)
+
+# To register all option groups
+option_groups = {}
 
 ###############################
 ##  Option group base class  ##
 ###############################
 
-class BaseOptionGroup(object):
+class _OptionGroup_metaclass(type):
+    def __new__(cls, name, base, dct):
+        try:
+            dct["_name"] = dct.pop("name")
+        except KeyError:
+            pass
+        newcls = type.__new__(cls, name, base, dct)
+        # Register the class
+        if "_name" in dct:
+            option_groups[dct["_name"]] = newcls
+        return newcls
+
+class OptionGroup:
 
     __slots__ = [ "name", "_parser" ]
 
-    def __init__(self, name="Base Options"):
-        self.name = name
-        self._parser = _global_parser.add_argument_group(title=name)
+    __metaclass__ = _OptionGroup_metaclass
+
+    def __init__(self):
+        self.name = self._name
+        self._parser = global_parser.add_argument_group(title=self.name.upper())
 
     def add_arg(self, *args, **kargs):
         """
@@ -76,47 +92,8 @@ class BaseOptionGroup(object):
         """
         pass
 
-
-##################################
-##  Program options base class  ##
-##################################
-
-class BaseProgramOpts(object):
-
-    def __init__(self, usg="%(prog)s [options]", desc=None):
-        self.parser = _global_parser
-        # Set the proper usage message and description
-        self.parser.usage = usg
-        self.parser.description = desc
-        self._groups = {}
-
-    def add_group(self, name, grp):
-        self._groups[name] = grp
-
-
-    def parse(self):
+    def set(self):
         """
-        Parse the program options
+        Set some context values from the options
         """
-        self.parser.parse_args(namespace=self)
-
-    def sanity_check(self):
-        """
-        Performs the sanity check for all options
-        """
-        for group in self._groups.values():
-            group.sanity_check()
-
-    def __getattr__(self, attr):
-        if attr in self._groups:
-            return self._groups[attr]
-        else:
-            raise AttributeError("No such group: %s" %attr)
-
-    def __setattr__(self, attr, val):
-        if "." in attr: # To make the namespace accessible to the members specified in "dest"
-            mem, attr = attr.split(".")
-            mem = getattr(self, mem)
-            mem.__setattr__(attr, val)
-        else:
-            object.__setattr__(self, attr, val)
+        pass
