@@ -11,12 +11,11 @@ Mitm by arp spoofing
 """
 
 import time
-import ethercut.context as ctx
 import ethercut.types.ticker as ticker
 import ethercut.mitm.base as base
 
+from ethercut.context import ctx
 from scapy.layers.l2 import Ether, ARP
-
 
 class ARPSpoofer(base.Spoofer):
 
@@ -115,7 +114,7 @@ class ARPSpoofer(base.Spoofer):
                 (ctx.target2.mac is None or t.mac in ctx.target2.mac)):
                 self.group2.append(t)
 
-        self.curr = ctx.targetlist.targets[:]
+        self.curr = ctx.targetlist.targets.values()
 
     def send_spoofed_rep(self, target, ip):
         """

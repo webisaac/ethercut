@@ -11,12 +11,12 @@ Target scanning module (ActiveScan and PassiveScan)
 """
 
 import pcap, time
-import ethercut.context as ctx
 import ethercut.net.target as target
 import ethercut.types.ticker as ticker
 import ethercut.exceptions as exceptions
 import ethercut.types.basethread as basethread
 
+from ethercut.context import ctx
 from ethercut.types.colorstr import CStr
 from scapy.layers.l2 import Ether, ARP
 

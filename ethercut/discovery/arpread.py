@@ -12,9 +12,10 @@ ARP cache reading module
 
 import ethercut.shell as shell
 import ethercut.utils as utils
-import ethercut.context as ctx
 import ethercut.net.target as target
 import ethercut.types.basethread as basethread
+
+from ethercut.context import context
 
 
 class ARPReader(basethread.BaseThread):

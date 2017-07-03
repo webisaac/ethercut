@@ -19,36 +19,50 @@ class _Decoder_metaclass(type):
             dct["_name"] = dct.pop("name")
         except KeyError:
             pass
+        from ethercut.config import ethconf
+        # Resolve the ports
+        try:
+            dct["ports"] = ethconf.decoderports.pop(0)
+        except IndexError:
+            pass
+
         newcls = super(_Decoder_metaclass, cls).__new__(cls, name, supers, dct)
-        # Register the decoder
-        from ethercut.config import conf
-        if "_name" in dct and dct["_name"]:
-            conf.decoderlist.register(dct["_name"], newcls)
-        elif name != "Decoder":
-            conf.decoderlist.register(name, newcls)
+        try:
+            # Register the decoder to make it available to the user
+            ethconf.decoderlist.register(newcls, dct["_name"])
+        except KeyError:
+            pass
+
         return newcls
 
 class Decoder:
 
-    __slots__ = [ "name", "filter" ]
+    __slots__ = [ "name", "ports" ]
 
     __metaclass__ = _Decoder_metaclass
 
-    name = ""
+    ports = []
 
-    def __init__(self, filter):
-        self.name = self._name if self._name else self.__class__.__name__
-        self.filter = filter
+    def __init__(self):
+        self.name = self._name or self.__class__.__name__
 
     def decode(self, packet):
         """
         Runs the packet through the filter and if it matches it, calls on_packet()
         """
-        if self.filter(packet):
-            self.on_packet(packet)
+        if not self.ports or packet.sport in self.ports or packet.dport in self.ports:
+            if self.filter(packet):
+                self.on_packet(packet)
 
     def on_packet(self, packet):
         """
         This function is applied to every packet that matches the filter
         """
         pass
+
+    def filter(self, packet):
+        """
+        Use this function to check if the packet meets the requisites to be parsed.
+        Must return True if it does meet them and False otherwise.
+        """
+        return True

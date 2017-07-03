@@ -14,6 +14,8 @@ import time
 import ethercut.utils as utils
 import ethercut.exceptions as exceptions
 
+from ethercut.types.colorstr import CStr
+
 
 class Target(object):
     """
@@ -30,7 +32,7 @@ class Target(object):
 
     __slots__ = [ "mac", "ip", "vendor", "__lts", "stale", "perm" ]
 
-    def __init__(self, ip=None, mac=None, stale=3, perm=False):
+    def __init__(self, ip=None, mac=None, stale=30, perm=False):
         # A target needs something to be identified, this can be either it's IP or it's MAC.
         # If none of this fields is specified, we should raise an error.
         if not ip and not mac:
@@ -94,9 +96,9 @@ class Target(object):
         """
         Complete representation of the Target
         """
-        addr = self.ip if self.ip else "???"
-        vendor = "[ %s ]"%self.vendor[1] if self.vendor[1] else "[ ??? ]"
-        mac = self.mac if self.mac else "???"
+        addr = self.ip or "???"
+        vendor = "[ %s ]"%CStr("%s"%(self.vendor[1] or "???")).grey
+        mac = self.mac or "???"
         s = "%s - %s %s" %(addr, mac, vendor)
         return s
 
@@ -124,46 +126,41 @@ class TargetList(object):
     def __init__(self, targ=[]):
         if not isinstance(targ, list):
             targ = [targ]
-        self.targets = targ
-        self.macs    = [] # List containing the mac addresses of all the targets
+        self.targets = {}
+        for t in targ:
+            if t.mac not in self.targets:
+                self.targets[t.mac] = t
 
     def get_alive(self):
         """
         Returns a list with all the alive hosts
         """
-        return filter(lambda x: x.is_alive(), self.targets)
+        return filter(lambda x: x.is_alive(), self.targets.values())
 
     def append(self, targ):
         """
         Adds a target to the list (if it is not already in it).
         """
-        if targ.mac not in self.macs:
-            self.targets.append(targ)
-            self.macs.append(targ.mac)
+        if targ.mac not in self.targets:
+            self.targets[targ.mac] = targ
 
     def get(self, targ):
         """
         Gets a target of the list that matches targ (None if not found)
         """
-        ret = None
-        for t in self.targets:
-            if t == targ:
-                ret = t
-                break
-        return ret
+        try:
+            return self.targets[targ.mac]
+        except KeyError:
+            return None
 
     def remove_lost(self):
         """
         Remove all lost targets from the list (returns all lost targets)
         """
-        i = 0
         lost = []
-        for t in self.targets:
+        for t in self.targets.values():
             if not t.is_alive():
-                lost.append(t)
-                self.targets = self.targets[:i] + self.targets[i+1:]
-            else:
-                i+=1
+                lost.append(self.targets.pop(t.mac))
         return lost
 
     def get_byip(self, ip):
@@ -171,7 +168,7 @@ class TargetList(object):
         Gets the first target whose IP matches ip (None if not found)
         """
         ret = None
-        for t in self.targets:
+        for t in self.targets.values():
             if t.ip == ip:
                 ret = t
                 break
@@ -181,57 +178,58 @@ class TargetList(object):
         """
         Gets the first target whose MAC matches mac (None if not found)
         """
-        ret = None
-        for t in self.targets:
-            if t.mac == mac:
-                ret = t
-                break
-        return ret
+        try:
+            return self.targets[mac]
+        except KeyError:
+            return None
 
     def pop(self, targ):
         """
         Removes a target from the list and returns it. Returns None if the target wasn't found.
         """
-        ret = None
-        for i, t in enumerate(self.targets):
-            if t == targ:
-                self.targets = self.targets[:i] + self.targets[i+1:]
-                self.macs.pop(self.macs.index(t.mac))
-                ret = t
-                break
-        return ret
+        try:
+            return self.targets.pop(targ.mac)
+        except KeyError:
+            return None
+
+    def clear(self):
+        """
+        Removes every target from the list
+        """
+        self.targets = {}
 
     def __iter__(self):
-        return iter(self.targets)
+        return iter(self.targets.values())
 
     def __str__(self):
         """
         String representation of the truncated target list
         """
-        s = " "
-        for t in self.targets:
+        targets = self.target.values()
+        s = ""
+        for t in targets:
             if len(s) > 100:
                 # Truncate and show the last item
-                s += " ... , %s" %self.targets[-1]
+                s += " ... , %s" %targets[-1]
                 break
             s += "%s, " %t
         else:
             s = s[:-2] # Remove the last ", "
 
-        return "[%s ]" %s
+        return "[ %s ]" %s
 
     def __repr__(self):
         """
         String representation of the whole target list
         """
-        s = ", ".join(map(str, self.targets))
+        s = ", ".join(map(str, self.targets.values()))
         return "[ %s ]" %s
 
     def __contains__(self, other):
-        for t in self.targets:
-            if t == other:
-                return True
-        return False
+        return other.mac in self.targets
+
+    def __len__(self):
+        return len(self.targets)
 
 class TargetSpec(object):
     """
@@ -247,7 +245,7 @@ class TargetSpec(object):
     __slots__ = [ "all", "ip", "mac", "port", "specific" ]
 
     def __init__(self, s=""):
-        self.all     = False # All IP, MAC and ports
+        self.all  = False # All IP, MAC and ports
         self.port = None # None means "No specific port" (all ports)
         self.mac  = None # None means "No specific ip" (all ip)
         self.ip   = None # None means "No specific mac" (all mac)
@@ -263,7 +261,7 @@ class TargetSpec(object):
         try:
             ip, mac, port = s.split("/")
         except ValueError:
-            exce
+            raise exceptions.EthercutException("Unexpected number of \"/\" (//): %s" %s)
 
         # Expand the ports and ip and mac addresses
         self.port = utils.expand_port(port)
@@ -276,13 +274,14 @@ class TargetSpec(object):
         """
         if self.specific: # If there are specific bindings
 
-            if host[0] in self.specific and host[1] in self.mac: # Check if ip is in specific
+            if host[0] in self.specific: # Check if ip is in specific
                 if host[2] in self.specific[host[0]]:
                     return True
                 else:
+                    #print "rejected %s %s %s" %(host[0], host[1], host[2])
                     return False
 
-            elif host[1] in self.specific and host[0] in self.ip: # Check if mac is in specific
+            elif host[1] in self.specific: # Check if mac is in specific
                 if host[2] in self.specific[host[1]]:
                     return True
                 else:
@@ -298,3 +297,17 @@ class TargetSpec(object):
 
         else:
             return False
+
+    def __contains__(self, other):
+        """
+        Checks if an IP or MAC address is contained in this specifications
+        """
+        if self.all:
+            return True
+        if utils.is_ip(other):
+            if self.ip is None or other in self.ip:
+                return True
+        elif utils.is_mac(other):
+            if self.mac is None or other in self.mac:
+                return True
+        return False

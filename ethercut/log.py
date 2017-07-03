@@ -45,7 +45,3 @@ class EthercutFormatter(logging.Formatter):
         self._fmt = orig
 
         return ret
-
-
-log_ethcut = logging.getLogger("ethercut")
-log_ethcut.setLevel(logging.INFO)

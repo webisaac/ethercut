@@ -20,11 +20,11 @@ class _Spoofer_metaclass(type):
             pass
         newcls = super(_Spoofer_metaclass, cls).__new__(cls, name, supers, dct)
         # Register the spoofer
-        from ethercut.config import conf
+        from ethercut.config import ethconf
         if "_name" in dct and dct["_name"]:
-            conf.spooferlist.register(dct["_name"], newcls)
+            ethconf.spooferlist.register(newcls, dct["_name"])
         elif name != "Spoofer":
-            conf.spooferlist.register(name, newcls)
+            ethconf.spooferlist.register(newcls, name)
         return newcls
 
 class Spoofer:

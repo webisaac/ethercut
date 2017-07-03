@@ -16,6 +16,6 @@ STATE = "pre-alpha"
 VERSION = ".".join(str(x) for x in IVERSION)
 COPYRIGHT = "2017"
 AUTHOR = "Ivan \"evilgroot\" Luengo"
-CONFILE = "/media/ivan/8GB/gitproyects/ethercut1/share/ethcut.conf"
+CONFILE = "path/to/ether.conf"
 
 PROGRAM = "%s v%s %s" %(NAME, VERSION, STATE)

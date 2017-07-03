@@ -12,6 +12,7 @@ Link (network interface), the attacking device
 
 import ethercut.utils as utils
 
+from ethercut.types.colorstr import CStr
 
 class Link(object):
     """
@@ -41,12 +42,12 @@ class Link(object):
         s  = "%s: \n" %self.name
         s += "\tmac: %s" %self.mac
         s += "\tinet: %s  netmask: %s  bcast: %s\n" %(self.ip, self.netmask, self.bcast)
-        s += "\tinet6: %s\n" %self.inet6
+        s += "\tinet6: %s\n" %self.ip6
         return s
 
     def __str__(self):
-        vendor = self.vendor[1] if self.vendor[1] else "???"
-        return "%s - %s : %s [ %s ]" %(self.ip, self.mac, self.name, vendor)
+        vendor = CStr("%s"%(self.vendor[1] or "???")).grey
+        return "%s - %s : %s [ %s ]" %(self.ip, self.mac, CStr(self.name).yellow , vendor)
 
     def __setattr__(self, attr, val):
         if attr == "mac" and val is not None:

@@ -14,7 +14,10 @@ import time
 import pcap
 import Queue
 import ethercut.types.basethread as basethread
-import ethercut.context as ctx
+
+from ethercut.context import ctx
+from ethercut.config import ethconf
+from ethercut.types.colorstr import CStr
 
 
 #####################
@@ -65,21 +68,28 @@ class Injector(object):
     Packet injector. Spawns a number of workers to inject the packets on the queue
     """
 
-    __slots__ = [ "queue", "workers", "running" ]
+    __slots__ = [ "queue", "workers", "running", "enabled" ]
 
     def __init__(self):
         self.queue = Queue.Queue()
         self.running = False
+        self.workers = []
+        self.enabled = False
+        ctx.injector = self
+
+    def configure(self):
         # Configure the pcap stream for the workers
+        self.enabled = True
         pcp = pcap.pcap(ctx.iface.name, 65535, False, 1)
-        self.workers = [_InjectorWorker(self.queue, pcp, 0.0, name="Injector worker %d")
-                        for n in xrange(1, 5)]
+        self.workers = [_InjectorWorker(self.queue, pcp, ethconf.inject_timeout, name="Injector worker %d")
+                        for n in xrange(1, ethconf.inject_workers)]
+        ctx.ui.msg("[%s] Workers: %s | Delay: %sms" %(CStr("INJECTOR").cyan, ethconf.inject_workers, ethconf.inject_timeout))
 
     def start(self):
         """
         Starts the injector
         """
-        if self.running:
+        if self.running or not self.enabled:
             return
         for t in self.workers:
             t.start()
@@ -89,7 +99,7 @@ class Injector(object):
         """
         Stops the injector engine
         """
-        if not self.running:
+        if not self.running or not self.enabled:
             return
         # Push None to the queue tho signal the end of the activity
         for i in xrange(len(self.workers)):
@@ -103,11 +113,11 @@ class Injector(object):
         Push a packet into the queue
         """
         # Prevent other threads to push packets to the queue while shutting down
-        if self.running:
+        if self.running and self.enabled:
             self.queue.put(pkt, block, timeout)
 
     def __nonzero__(self):
         """
         Returns True if the injector is running, False otherwise
         """
-        return self.running
+        return self.running and self.enabled

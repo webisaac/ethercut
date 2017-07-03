@@ -10,11 +10,8 @@
 Class responsible of loading and managing the decoders
 """
 
-import ethercut.context as ctx
-import ethercut.exceptions as exceptions
-
-from ethercut.config import conf
-
+from ethercut.config import ethconf
+from ethercut.context import ctx
 
 class DecoderManager(object):
 
@@ -27,19 +24,16 @@ class DecoderManager(object):
         """
         for d in ctx.opt.sniff.decoders:
             if d == "*":
-                self.chain = map(lambda x: x(), conf.decoderlist.values())
+                self.chain = map(lambda x: x(), ethconf.decoderlist.values())
                 break
             else:
-                try:
-                    self.chain.append(conf.decoderlist[d]())
-                except exceptions.EthercutException as e:
-                    ctx.ui.warning(e.msg)
+                self.chain.append(ethconf.decoderlist[d]())
 
     def register(self):
         """
         Register all the decoders that will be available to the user to select
         """
-        for x in map(lambda x: "ethercut.decoders.%s"%x, conf.decodermodules):
+        for x in map(lambda x: "ethercut.decoders.%s"%x, ethconf.decodermodules):
             __import__(x, globals(), locals(), [], 0)
 
     def decode(self, packet):
