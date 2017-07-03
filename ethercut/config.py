@@ -10,53 +10,52 @@
 Ethercut configuration from ethcut.conf
 """
 
-
+import ethercut.utils as utils
 import ethercut.exceptions as exceptions
+import ethercut.types.reglist as reglist
 
-class ParserList(dict):
+
+class EtherConfig(object):
     """
-    Registers a parser for a determined section
+Ethercut configuration:
+
+snaplen:  Snapshot len for sniffing pcap stream
+sniff_timeout : Pcap timeout in sniffing thread
+spoofermodules: Spoofer modules to be registered
+decodermodules: Decoder modules to be registered
+geoip_database: Path to Maxmind's database
     """
-    def register(self, parser):
-        self[parser.__name__] = parser
-        return parser # Return the parser to use this method as a decorator
-
-class SpooferList(dict):
-    def register(self, name, spoofer):
-        self[name] = spoofer
-
-class DecoderList(dict):
-    def register(self, name, decoder):
-        self[name] = decoder
-
-class Config(object):
      # Parsed from configuration file
-    parsers = ParserList()
+    __parsers = reglist.RegList()
     # SNIFFER
     snaplen = 65535
-    promisc = False
-    sniff_timeout = 0.1
+    sniff_timeout = 1
     # SPOOFERS
     spoofermodules = []
     # DECODERS
     decodermodules = []
+    decoderports = []
     # GEOIP
-    geoipdb = ""
+    geoip_database = ""
+    # Packet injector
+    inject_workers = 4
+    inject_timeout = 0.0
 
     # Configured at runtime
-    spooferlist = SpooferList()
-    decoderlist = DecoderList()
+    spooferlist = reglist.RegList()
+    decoderlist = reglist.RegList()
 
     def load(self, filename):
         """
         Loads a configuration file
         """
-        ln = 1 # Line number
+        ln = 0 # Line number
         section = None
         parser = None
         try:
             with open(filename, "r") as confile:
                 for line in confile:
+                    ln += 1
                     line = line.strip()
                     # Skip comments and empty lines
                     if not line or line.startswith("#"):
@@ -68,7 +67,7 @@ class Config(object):
                         section = line[1:-1]
                         # Get the section parser
                         try:
-                            parser = self.parsers[section]
+                            parser = self.__parsers[section]
                         except KeyError:
                             raise exceptions.EthercutException("Invalid section in line %s of %s"%(ln, filename))
                         continue
@@ -80,10 +79,13 @@ class Config(object):
                     i = line.find("#")
                     if i >= 0:
                         line = line[:i]
+                        line = line.strip()
                     try:
                         parser(self, line)
                     except AttributeError as e:
                         raise exceptions.EthercutException("Invalid entry in line %s of %s" %(ln, filename))
+                    except exceptions.EthercutException as e:
+                        raise exceptions.EthercutException("%s in line %s of %s"%(str(e), ln, filename))
         except OSError:
             raise exceptions.EthercutException("Could't load configuration file %s" %confile)
 
@@ -91,33 +93,35 @@ class Config(object):
 ##  Section parsers  ##
 #######################
 
-    @parsers.register
+    @__parsers.register
     def spoofers(self, entry):
         """
         Spoofers section, entry is the module where the spoofer is written
         """
         self.spoofermodules.append(entry)
 
-    @parsers.register
+    @__parsers.register
     def sniff(self, entry):
         """
         Collect data for the sniffer
         """
         # Split the entry into field and value
         field, value = map(lambda x: x.strip(), entry.split("="))
-        if field == "promisc": # Pcap complains if promisc is not boolean
-            self.promisc = False if value == "0" else True
-        else:
-            self.__setattr__(field, type(field)(value))
+        self.__setattr__(field, type(self.__getattribute__(field))(value))
 
-    @parsers.register
+    @__parsers.register
     def decoders(self, entry):
         """
         Collect data from decoders
         """
-        self.decodermodules.append(entry)
+        field, value = map(lambda x: x.strip(), entry.split("="))
+        self.decodermodules.append(field)
+        # Important! decoders will be loaded in the same order they are written in the conf file
+        ports = None if value.lower() == "none" else utils.expand_port(value)
+        self.decoderports.append(ports)
 
-    @parsers.register
+
+    @__parsers.register
     def geoip(self, entry):
         """
         Collect data for the geoip2 module
@@ -127,4 +131,4 @@ class Config(object):
 
 
 
-conf = Config()
+ethconf = EtherConfig()
