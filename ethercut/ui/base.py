@@ -107,7 +107,7 @@ class UI(object):
         Returns the banner as a string
         """
         s = ""
-        with open("/media/ivan/8GB/gitproyects/ethercut/share/banner", "r") as f:
+        with open("/usr/share/ethercut/banner", "r") as f:
             for l in f:
                 s+="%s"%l
         s = s.replace("%VERSION%", "v"+VERSION+" "+STATE)

@@ -13,7 +13,7 @@ Miscellaneous utility functions
 import socket
 import re, struct
 import ethercut.shell as shell
-import ethercut.platform as platform
+import ethercut.const as const
 import ethercut.exceptions as exceptions
 
 
@@ -58,7 +58,7 @@ def normalize(x):
     """
     if is_mac(x):
         return x.lower()
-    raise ValueError("x must be a valid mac address")
+    raise ValueError("x must be a valid mac address: %s" %x)
 
 
 #####################
@@ -274,7 +274,7 @@ def get_iface(iface):
 
     ret = {"hw": None, "inet": None, "bcast": None, "netmask": None, "inet6": None, "mtu": None}
 
-    if platform.LINUX:
+    if const.LINUX:
         for line in cnf:
             m = re.search("HWaddr[\s]+([0-9A-Fa-f]{1,2}\:){5}[0-9A-Fa-f]{1,2}", line)
             if m:
@@ -294,7 +294,7 @@ def get_iface(iface):
             m = re.search("MTU:[\s]*[0-9]+", line)
             if m:
                 ret["mtu"] = m.group()[4:].strip()
-    elif platform.DARWIN:
+    elif const.DARWIN:
         for line in cnf:
             m = re.search("ether[\s]+([0-9A-Fa-f]{1,2}\:){5}[0-9A-Fa-f]{1,2}", line)
             if m:

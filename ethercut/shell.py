@@ -13,7 +13,7 @@ Shell command execution
 import subprocess
 
 #import ethercut.log       as log
-import ethercut.platform  as platform
+import ethercut.const as const
 import ethercut.exceptions as exceptions
 
 
@@ -91,7 +91,7 @@ class Shell:
         """
         Uses ifconfig to change the mac of iface. Supports OSX and Linux systems
         """
-        if platform.DARWIN:
+        if const.DARWIN:
             self.ifconfig(iface+" ether "+new)
-        elif platform.LINUX:
+        elif const.LINUX:
             self.ifconfig(iface+" hw ether "+new)

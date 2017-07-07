@@ -10,20 +10,18 @@
 Colored string (with ANSI escapes)
 """
 
-# Foreground and background
-FG = "\033[38;2;%sm"
-BG = "\033[48;2;%sm"
+from ethercut.const import DARWIN, LINUX
 
 # COLORS
-RED    = "255;0;0"
-GREEN  = "0;252;0"
-YELLOW = "205;205;0"
-BLUE   = "0;0;238"
-CYAN   = "0;255;255"
-MAGENTA= "205;0;205"
-WHITE  = "255;255;255"
-GREY   = "127;127;127"
-BLACK  = "0;0;0"
+RED    = "\033[91m"
+GREEN  = "\033[32m"
+YELLOW = "\033[33m"
+BLUE   = "\033[94m"
+CYAN   = "\033[36m"
+MAGENTA= "\033[95m"
+WHITE  = "\033[97m"
+GREY   = "\033[90m"
+BLACK  = "\033[30m"
 
 # Reset to default color
 RESET  = "\033[0m"
@@ -55,56 +53,56 @@ class CStr(str):
     def red(self):
         if not COLORS_ON:
             return self
-        return FG%RED+self+RESET
+        return RED+self+RESET
     @property
     def green(self):
         if not COLORS_ON:
             return self
-        return FG%GREEN+self+RESET
+        return GREEN+self+RESET
     @property
     def yellow(self):
         if not COLORS_ON:
             return self
-        return FG%YELLOW+self+RESET
+        return YELLOW+self+RESET
     @property
     def blue(self):
         if not COLORS_ON:
             return self
-        return FG%BLUE+self+RESET
+        return BLUE+self+RESET
     @property
     def cyan(self):
         if not COLORS_ON:
             return self
-        return FG%CYAN+self+RESET
+        return CYAN+self+RESET
     @property
     def magenta(self):
         if not COLORS_ON:
             return self
-        return FG%MAGENTA+self+RESET
+        return MAGENTA+self+RESET
     @property
     def white(self):
         if not COLORS_ON:
             return self
-        return FG%WHITE+self+RESET
+        return WHITE+self+RESET
     @property
     def grey(self):
         if not COLORS_ON:
             return self
-        return FG%GREY+self+RESET
+        return GREY+self+RESET
     @property
     def black(self):
         if not COLORS_ON:
             return self
-        return FG%BLACK+self+RESET
+        return BLACK+self+RESET
     def custom(self, r, g, b):
         if not COLORS_ON:
             return self
-        return FG%";".join([r,g,b])+self+RESET
+        return ";".join([r,g,b])+self+RESET
     def bg(self, color):
         if not COLORS_ON:
             return self
         try:
-            return FG%name2color[color.upper()]+self+RESET
+            return name2color[color.upper()]+self+RESET
         except KeyError:
             raise ValueError("valid colors: RED, GREEN, YELLOW, BLUE, CYAN, MAGENTA, WHITE, GREY, BLACK")
     def custombg(self, r, g, b):
