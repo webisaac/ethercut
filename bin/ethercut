@@ -1,0 +1,43 @@
+#! /usr/bin/env python
+# coding: utf-8
+
+# ETHERCUT SUITE
+# Author: Ivan 'evilgroot' Luengo
+# Email: evilgroot@gmail.com
+
+# This project is released under a GPLv3 license
+
+#######################################################################
+#                                                                     #
+#                   ethercut -- Mitm attack suite                     #
+#                                                                     #
+#              copyright © 2017 Ivan "evilgroot" Luengo               #
+#######################################################################
+
+import time
+
+from ethercut.master import Master
+from ethercut.exceptions import EthercutException
+
+master = Master()
+master.opt.parse()
+
+try:
+    master.start()
+
+    while True:
+        time.sleep(10)
+
+except KeyboardInterrupt:
+    pass
+
+except EthercutException as e:
+    master.ui.error(str(e))
+
+except Exception as e:
+    # XXX - Provisional until Logging is implemented
+    print "Ups.. An unhandled exception has occurred, please report this error on the github page"
+    print e
+
+finally:
+    master.shutdown()
