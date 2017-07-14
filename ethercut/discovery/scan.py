@@ -23,12 +23,12 @@ from scapy.layers.l2 import Ether, ARP
 class ActiveScan(object):
 
     def __init__(self, scanlist, initial=False):
-        self.scanlist = scanlist
-        self.initial  = initial
-        self.probe = ticker.Ticker(3.0, self.probing, name="Probing")
-        self.acquire = basethread.BaseThread("Acquire")
-        self.acquire.run = self.acquiring
         self.running  = False
+        self.scanlist = scanlist
+        self.initial = initial
+        self.acquire = basethread.BaseThread("Acquire", self.acquiring)
+        self.probe = basethread.BaseThread("Probing", self.probing) if initial \
+                     else ticker.Ticker(3.0, self.probing, name="Probing")
 
     def start(self):
         if self.running:
@@ -48,17 +48,9 @@ class ActiveScan(object):
         """
         Probing thread activity, probe the network for targets
         """
-        if self.running:
-            if self.initial: # An initial scan
-                ctx.ui.instant_msg("[%s] Scanning the network for %s hosts..." %(CStr("DISCOVERY").green,
-                                                                                len(self.scanlist)))
-                ctx.ui.progressbar(len(self.scanlist), "Target scanning")
-            for i, h in enumerate(self.scanlist):
-                ctx.injector.push(self.get_probe(h))
-                ctx.ui.update_progressbar(i+1)
-            if self.initial:
-                # Terminate the activity
-                self.probe.end(False) # We can't join current thread
+        # Start with an initial scan
+        for i, h in enumerate(self.scanlist):
+            ctx.injector.push(self.get_probe(h))
 
     def get_probe(self, ip):
         """
