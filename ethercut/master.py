@@ -12,6 +12,7 @@ Master: Handles the program loop
 
 import pcap, Queue, logging
 import contextlib
+import ethercut.ui          as ui
 import ethercut.log         as log
 import ethercut.sniff       as sniff
 import ethercut.utils       as utils
@@ -20,7 +21,6 @@ import ethercut.discovery   as discovery
 import ethercut.exceptions  as exceptions
 import ethercut.net.target  as target
 import ethercut.net.inject  as inject
-import ethercut.ui.text_ui  as ui
 import ethercut.net.network as network
 import ethercut.decodermanager as decmanager
 import ethercut.spoofermanager as spfmanager
@@ -80,6 +80,8 @@ class Master(object):
         if not self.opt.sniff.read:
             self.spoofers.load()
         self.decoders.load()
+
+        # Starts the user interface
         self.ui.start()
 
     def show_summary(self):
