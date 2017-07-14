@@ -18,11 +18,13 @@ thread_lock = threading.Lock()
 
 class BaseThread(threading.Thread):
 
-    def __init__(self, name="Ethercut Thread"):
+    def __init__(self, name="Ethercut Thread", run=None):
         super(BaseThread, self).__init__(name=name)
         self.running = False
         self.lock    = thread_lock
         self.daemon  = True  # Every thread will be a daemon
+        if run:
+            self.run = run
 
     def start(self):
         """
